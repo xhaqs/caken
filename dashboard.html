@@ -220,6 +220,7 @@ header{
     <button class="tab" onclick="switchDashTab('kitchen', this)">👨‍🍳 Ken's Kitchen</button>
     <button class="tab" onclick="switchDashTab('inventory', this)">📦 Inventory</button>
     <button class="tab" onclick="switchDashTab('settings', this)">⚙️ Settings</button>
+    <button class="tab" onclick="switchDashTab('feedback', this)">⭐ Feedback</button>
   </div>
 
   <div class="section active" id="sec-orders">
@@ -347,6 +348,14 @@ header{
 
     <button onclick="saveSettings()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Save Payment Links</button>
   </div>
+
+  <div class="section" id="sec-feedback">
+    <div class="stat-card" style="margin-bottom:16px">
+      <div class="stat-num" id="avgRating">—</div>
+      <div class="stat-label">Average Rating (<span id="feedbackCount">0</span> reviews)</div>
+    </div>
+    <div id="feedbackList"><div class="empty-state">No feedback yet</div></div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -373,6 +382,7 @@ function checkPin(){
     loadRecipes();
     loadInventory();
     loadSettings();
+    loadFeedback();
     setTimeout(checkReminders, 800);
   } else {
     toast('Incorrect PIN');
@@ -787,6 +797,41 @@ async function deleteInventoryItem(key){
   }catch(e){
     toast('Failed to delete','err');
   }
+}
+
+let _feedback = {};
+
+async function loadFeedback(){
+  try{
+    const r = await fetch('/api/feedback');
+    _feedback = await r.json();
+    renderFeedback();
+  }catch(e){}
+}
+
+function renderFeedback(){
+  const entries = Object.values(_feedback||{}).sort((a,b)=>b.ts - a.ts);
+  const countEl = document.getElementById('feedbackCount');
+  const avgEl = document.getElementById('avgRating');
+  const listEl = document.getElementById('feedbackList');
+
+  countEl.textContent = entries.length;
+  if(!entries.length){
+    avgEl.textContent = '—';
+    listEl.innerHTML = '<div class="empty-state">No feedback yet</div>';
+    return;
+  }
+
+  const avg = entries.reduce((sum,f)=>sum+f.rating,0) / entries.length;
+  avgEl.textContent = avg.toFixed(1)+' ★';
+
+  listEl.innerHTML = entries.map(f=>`
+    <div class="order-card">
+      <div style="color:var(--gold);font-size:16px;margin-bottom:6px">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</div>
+      ${f.text ? '<div style="font-size:12px;color:rgba(251,240,228,0.8);margin-bottom:6px">'+f.text+'</div>' : ''}
+      <div style="font-size:10px;color:rgba(251,240,228,0.4)">${f.name} · ${new Date(f.ts).toLocaleDateString()}</div>
+    </div>
+  `).join('');
 }
 
 async function loadSettings(){

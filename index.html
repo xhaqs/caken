@@ -463,6 +463,23 @@ textarea{resize:vertical;min-height:70px}
   </div>
 </div>
 
+<div class="section" id="feedback">
+  <div class="section-eyebrow">Your Experience</div>
+  <div class="section-title">Rate & Review</div>
+  <div class="order-card">
+    <div style="text-align:center;margin-bottom:16px" id="starRating">
+      <span class="star" data-val="1" onclick="setRating(1)" style="font-size:30px;cursor:pointer;opacity:0.3">★</span>
+      <span class="star" data-val="2" onclick="setRating(2)" style="font-size:30px;cursor:pointer;opacity:0.3">★</span>
+      <span class="star" data-val="3" onclick="setRating(3)" style="font-size:30px;cursor:pointer;opacity:0.3">★</span>
+      <span class="star" data-val="4" onclick="setRating(4)" style="font-size:30px;cursor:pointer;opacity:0.3">★</span>
+      <span class="star" data-val="5" onclick="setRating(5)" style="font-size:30px;cursor:pointer;opacity:0.3">★</span>
+    </div>
+    <textarea id="feedbackText" placeholder="Tell us about your cake experience..."></textarea>
+    <input type="text" id="feedbackName" placeholder="Your name (optional)">
+    <button class="btn btn-primary" style="width:100%" onclick="submitFeedback()">Submit Feedback</button>
+  </div>
+</div>
+
 <div style="height:80px"></div>
 
 <div id="toast"></div>
@@ -497,6 +514,37 @@ async function loadPortfolioGallery(){
 }
 loadPortfolioGallery();
 checkPaymentSuccess();
+
+let _selectedRating = 0;
+
+function setRating(val){
+  _selectedRating = val;
+  document.querySelectorAll('.star').forEach(s=>{
+    s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
+    s.style.color = parseInt(s.dataset.val) <= val ? 'var(--gold)' : 'var(--cream)';
+  });
+}
+
+async function submitFeedback(){
+  const text = document.getElementById('feedbackText').value.trim();
+  const name = document.getElementById('feedbackName').value.trim();
+
+  if(_selectedRating === 0){ toast('Please select a star rating'); return; }
+
+  try{
+    await fetch('/api/feedback', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({rating:_selectedRating, text, name: name||'Anonymous', ts: Date.now()})
+    });
+    toast('💕 Thank you for your feedback!');
+    document.getElementById('feedbackText').value = '';
+    document.getElementById('feedbackName').value = '';
+    setRating(0);
+  }catch(e){
+    toast('Failed to submit feedback','err');
+  }
+}
 
 function checkPaymentSuccess(){
   const params = new URLSearchParams(window.location.search);
