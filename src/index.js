@@ -15,15 +15,15 @@ export default {
     }
 
     if (url.pathname === '/api/orders') {
-      return handleOrders(request);
+      return handleOrders(request, env);
     }
 
     if (url.pathname === '/api/gallery') {
-      return handleGallery(request);
+      return handleGallery(request, env);
     }
 
     if (url.pathname === '/api/recipes') {
-      return handleRecipes(request, url);
+      return handleRecipes(request, url, env);
     }
 
     if (url.pathname === '/api/chef-ai' && request.method === 'POST') {
@@ -31,15 +31,19 @@ export default {
     }
 
     if (url.pathname === '/api/inventory') {
-      return handleInventory(request, url);
+      return handleInventory(request, url, env);
     }
 
     if (url.pathname === '/api/settings') {
-      return handleSettings(request);
+      return handleSettings(request, env);
     }
 
     if (url.pathname === '/api/feedback') {
-      return handleFeedback(request);
+      return handleFeedback(request, env);
+    }
+
+    if (url.pathname === '/api/auth' && request.method === 'POST') {
+      return handleAuth(request, env);
     }
 
     const assetResponse = await env.ASSETS.fetch(request);
@@ -49,8 +53,9 @@ export default {
   }
 };
 
-async function handleOrders(request) {
+async function handleOrders(request, env) {
   try {
+    if (request.method !== 'POST' && !(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/orders.json', {
@@ -98,6 +103,7 @@ async function handleOrders(request) {
 
 async function handleFeedback(request) {
   try {
+    if (request.method !== 'POST' && !(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/feedback.json', {
@@ -123,8 +129,48 @@ async function handleFeedback(request) {
   }
 }
 
-async function handleSettings(request) {
+async function deriveToken(pin) {
+  const data = new TextEncoder().encode(pin + 'caken-session-salt-2026');
+  const hashBuf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkAuth(request, env) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  if (!token || !env.DASHBOARD_PIN) return false;
+  const expected = await deriveToken(env.DASHBOARD_PIN);
+  return token === expected;
+}
+
+function unauthorized() {
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  });
+}
+
+async function handleAuth(request, env) {
   try {
+    const { pin } = await request.json();
+    if (pin === env.DASHBOARD_PIN) {
+      const token = await deriveToken(env.DASHBOARD_PIN);
+      return new Response(JSON.stringify({ ok: true, token }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+async function handleSettings(request, env) {
+  try {
+    if (request.method !== 'GET' && !(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/settings.json', {
@@ -150,8 +196,9 @@ async function handleSettings(request) {
   }
 }
 
-async function handleInventory(request, url) {
+async function handleInventory(request, url, env) {
   try {
+    if (!(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/inventory.json', {
@@ -198,6 +245,7 @@ async function handleInventory(request, url) {
 
 async function handleChefAI(request, env) {
   try {
+    if (!(await checkAuth(request, env))) return unauthorized();
     const { message, history } = await request.json();
     if (!message) {
       return new Response(JSON.stringify({ error: 'message required' }), { status: 400 });
@@ -237,8 +285,9 @@ async function handleChefAI(request, env) {
   }
 }
 
-async function handleRecipes(request, url) {
+async function handleRecipes(request, url, env) {
   try {
+    if (!(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/recipes.json', {
@@ -271,8 +320,9 @@ async function handleRecipes(request, url) {
   }
 }
 
-async function handleGallery(request) {
+async function handleGallery(request, env) {
   try {
+    if (request.method !== 'GET' && !(await checkAuth(request, env))) return unauthorized();
     if (request.method === 'POST') {
       const body = await request.json();
       const r = await fetch(DB + '/caken/gallery.json', {

@@ -364,7 +364,6 @@ header{
 <div id="toast"></div>
 
 <script>
-const CORRECT_PIN = '4321'; // Change this before showing Ken!
 let _orders = {};
 let _gallery = {};
 
@@ -375,9 +374,26 @@ function toast(msg, dur=3000){
   setTimeout(()=>el.style.display='none', dur);
 }
 
-function checkPin(){
+let _authToken = sessionStorage.getItem('caken_auth_token') || null;
+
+function authFetch(url, options = {}) {
+  options.headers = options.headers || {};
+  if (_authToken) options.headers['Authorization'] = 'Bearer ' + _authToken;
+  return fetch(url, options);
+}
+
+async function checkPin(){
   const val = document.getElementById('pinInput').value;
-  if(val === CORRECT_PIN){
+  try{
+    const r = await authFetch('/api/auth', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pin: val})
+    });
+    const data = await r.json();
+    if(data.ok && data.token){
+      _authToken = data.token;
+      sessionStorage.setItem('caken_auth_token', _authToken);
     document.getElementById('pinGate').style.display = 'none';
     document.getElementById('dash').style.display = 'block';
     loadOrders();
@@ -387,8 +403,11 @@ function checkPin(){
     loadSettings();
     loadFeedback();
     setTimeout(checkReminders, 800);
-  } else {
-    toast('Incorrect PIN');
+    } else {
+      toast('Incorrect PIN');
+    }
+  }catch(e){
+    toast('Connection error, try again');
   }
 }
 document.getElementById('pinInput').addEventListener('keypress', e=>{
@@ -404,7 +423,7 @@ function switchDashTab(name, btn){
 
 async function loadOrders(){
   try{
-    const r = await fetch('/api/orders');
+    const r = await authFetch('/api/orders');
     _orders = await r.json();
     renderOrders();
     updateStats();
@@ -476,7 +495,7 @@ function shareOrder(key){
 async function deleteOrder(key){
   if(!confirm('Delete this order? This cannot be undone.')) return;
   try{
-    await fetch('/api/orders?key='+key, { method:'DELETE' });
+    await authFetch('/api/orders?key='+key, { method:'DELETE' });
     toast('Order deleted');
     loadOrders();
   }catch(e){
@@ -486,7 +505,7 @@ async function deleteOrder(key){
 
 async function updateOrderStatus(key, status){
   try{
-    await fetch('/api/orders', {
+    await authFetch('/api/orders', {
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({key, status})
@@ -501,7 +520,7 @@ async function updateOrderStatus(key, status){
 
 async function loadGallery(){
   try{
-    const r = await fetch('/api/gallery');
+    const r = await authFetch('/api/gallery');
     _gallery = await r.json();
     renderGallery();
   }catch(e){}
@@ -525,7 +544,7 @@ function renderGallery(){
 async function deleteGalleryPhoto(key){
   if(!confirm('Delete this photo?')) return;
   try{
-    await fetch('/api/gallery?key='+key, { method:'DELETE' });
+    await authFetch('/api/gallery?key='+key, { method:'DELETE' });
     toast('Photo deleted');
     loadGallery();
   }catch(e){
@@ -542,7 +561,7 @@ function toggleRecipeForm(){
 
 async function loadRecipes(){
   try{
-    const r = await fetch('/api/recipes');
+    const r = await authFetch('/api/recipes');
     _recipes = await r.json();
     renderRecipes();
   }catch(e){}
@@ -561,7 +580,7 @@ async function saveRecipe(){
   const recipe = { name, category, servings, ingredients, steps, notes, ts: Date.now() };
 
   try{
-    await fetch('/api/recipes', {
+    await authFetch('/api/recipes', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(recipe)
@@ -617,7 +636,7 @@ function toggleRecipeDetail(key){
 async function deleteRecipe(key){
   if(!confirm('Delete this recipe?')) return;
   try{
-    await fetch('/api/recipes?key='+key, { method:'DELETE' });
+    await authFetch('/api/recipes?key='+key, { method:'DELETE' });
     toast('Recipe deleted');
     loadRecipes();
   }catch(e){
@@ -664,7 +683,7 @@ async function sendChefMessage(){
   el.scrollTop = el.scrollHeight;
 
   try{
-    const r = await fetch('/api/chef-ai', {
+    const r = await authFetch('/api/chef-ai', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({message, history: _chatHistory.slice(0,-1)})
@@ -687,7 +706,7 @@ function toggleInventoryForm(){
 
 async function loadInventory(){
   try{
-    const r = await fetch('/api/inventory');
+    const r = await authFetch('/api/inventory');
     _inventory = await r.json();
     renderInventory();
   }catch(e){}
@@ -715,7 +734,7 @@ async function saveInventoryItem(){
   if(!name){ toast('Please enter an ingredient name'); return; }
 
   try{
-    await fetch('/api/inventory', {
+    await authFetch('/api/inventory', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({name, quantity, unit, threshold, ts: Date.now()})
@@ -779,7 +798,7 @@ async function adjustInventory(key, delta){
   if(!item) return;
   const newQty = Math.max(0, (item.quantity||0) + delta);
   try{
-    await fetch('/api/inventory', {
+    await authFetch('/api/inventory', {
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({key, quantity:newQty})
@@ -794,7 +813,7 @@ async function adjustInventory(key, delta){
 async function deleteInventoryItem(key){
   if(!confirm('Remove this ingredient from tracking?')) return;
   try{
-    await fetch('/api/inventory?key='+key, { method:'DELETE' });
+    await authFetch('/api/inventory?key='+key, { method:'DELETE' });
     toast('Ingredient removed');
     loadInventory();
   }catch(e){
@@ -806,7 +825,7 @@ let _feedback = {};
 
 async function loadFeedback(){
   try{
-    const r = await fetch('/api/feedback');
+    const r = await authFetch('/api/feedback');
     _feedback = await r.json();
     renderFeedback();
   }catch(e){}
@@ -839,7 +858,7 @@ function renderFeedback(){
 
 async function loadSettings(){
   try{
-    const r = await fetch('/api/settings');
+    const r = await authFetch('/api/settings');
     const s = await r.json();
     if(s.stripeSmall) document.getElementById('stripeSmall').value = s.stripeSmall;
     if(s.stripeMedium) document.getElementById('stripeMedium').value = s.stripeMedium;
@@ -856,7 +875,7 @@ async function saveSettings(){
     stripeTiered: document.getElementById('stripeTiered').value.trim()
   };
   try{
-    await fetch('/api/settings', {
+    await authFetch('/api/settings', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(settings)
@@ -971,7 +990,7 @@ async function uploadGalleryPhoto(e){
   toast('Compressing photo...');
   try{
     const photo = await compressImage(file, 1000, 0.75);
-    await fetch('/api/gallery', {
+    await authFetch('/api/gallery', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({photo, ts: Date.now()})
