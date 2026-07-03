@@ -342,7 +342,13 @@ function renderOrders(){
           <div class="order-no">${o.orderNo}</div>
           <div class="order-name">${o.name}</div>
         </div>
-        <span class="status-badge status-${o.status}">${o.status}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="status-badge status-${o.status}">${o.status}</span>
+          <div style="display:flex;gap:4px">
+            <button onclick="shareOrder('${key}')" style="background:none;border:1px solid var(--border);color:var(--cream);border-radius:50%;width:24px;height:24px;font-size:10px;cursor:pointer">📤</button>
+            <button onclick="deleteOrder('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:50%;width:24px;height:24px;font-size:11px;cursor:pointer">×</button>
+          </div>
+        </div>
       </div>
       <div class="order-detail">
         <b>${o.occasion}</b> · ${o.size}<br>
@@ -361,6 +367,28 @@ function renderOrders(){
       </select>
     </div>
   `).join('');
+}
+
+function shareOrder(key){
+  const o = _orders[key];
+  if(!o) return;
+  const text = 'caKen Order '+o.orderNo+'\n'+o.name+' — '+o.occasion+', '+o.size+'\nFlavor: '+o.flavor+'\nDelivery: '+o.date+' to '+o.address+'\nContact: '+o.contact+'\nPayment: '+o.payment+'\nStatus: '+o.status+(o.notes?'\nNotes: '+o.notes:'');
+  if(navigator.share){
+    navigator.share({title:o.orderNo, text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast('📋 Order copied')).catch(()=>toast('Could not copy','err'));
+  }
+}
+
+async function deleteOrder(key){
+  if(!confirm('Delete this order? This cannot be undone.')) return;
+  try{
+    await fetch('/api/orders?key='+key, { method:'DELETE' });
+    toast('Order deleted');
+    loadOrders();
+  }catch(e){
+    toast('Failed to delete','err');
+  }
 }
 
 async function updateOrderStatus(key, status){

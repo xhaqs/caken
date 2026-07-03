@@ -30,6 +30,10 @@ export default {
       return handleChefAI(request, env);
     }
 
+    if (url.pathname === '/api/inventory') {
+      return handleInventory(request, url);
+    }
+
     const assetResponse = await env.ASSETS.fetch(request);
     const newResponse = new Response(assetResponse.body, assetResponse);
     newResponse.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://riakoine-caken-default-rtdb.firebaseio.com; img-src 'self' data: blob:; media-src 'self' data: blob:; base-uri 'self'");
@@ -69,6 +73,59 @@ async function handleOrders(request) {
       const data = await r.json();
       return new Response(JSON.stringify(data), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+      });
+    }
+    if (request.method === 'DELETE') {
+      const key = new URL(request.url).searchParams.get('key');
+      await fetch(DB + '/caken/orders/' + key + '.json', { method: 'DELETE' });
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+async function handleInventory(request, url) {
+  try {
+    if (request.method === 'POST') {
+      const body = await request.json();
+      const r = await fetch(DB + '/caken/inventory.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      return new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+      });
+    }
+    if (request.method === 'GET') {
+      const r = await fetch(DB + '/caken/inventory.json');
+      const data = await r.json();
+      return new Response(JSON.stringify(data || {}), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+      });
+    }
+    if (request.method === 'PUT') {
+      const body = await request.json();
+      const { key, quantity } = body;
+      await fetch(DB + '/caken/inventory/' + key + '/quantity.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quantity)
+      });
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    if (request.method === 'DELETE') {
+      const key = url.searchParams.get('key');
+      await fetch(DB + '/caken/inventory/' + key + '.json', { method: 'DELETE' });
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
