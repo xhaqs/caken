@@ -1,0 +1,10 @@
+{
+  "name": "caKen — Cakes by Ken",
+  "short_name": "caKen",
+  "description": "Custom celebration cakes handcrafted in Ohio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2B1810",
+  "theme_color": "#E8447A",
+  "icons": []
+}

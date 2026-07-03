@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>caKen — Custom Cakes by Ken</title>
+<link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cocoa:#2B1810;
+  --cocoa-light:#4A2C1D;
+  --cocoa-lighter:#5E3B28;
+  --pink:#E8447A;
+  --pink-deep:#C22960;
+  --blush:#F5C6D6;
+  --cream:#FBF0E4;
+  --gold:#C9A66B;
+  --border:rgba(251,240,228,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--cocoa);
+  color:var(--cream);
+  font-family:'Work Sans',sans-serif;
+  min-height:100vh;
+}
+.display{font-family:'Cormorant Garamond',serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ── HEADER ── */
+header{
+  padding:18px 20px 14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  background:rgba(43,24,16,0.95);
+  backdrop-filter:blur(8px);
+  z-index:100;
+}
+.logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px;
+  font-weight:700;
+  color:var(--cream);
+  letter-spacing:0.01em;
+}
+.logo .accent{color:var(--pink)}
+.header-actions{display:flex;gap:10px;align-items:center}
+.icon-btn{
+  background:none;border:1px solid var(--border);color:var(--cream);
+  border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ── HERO ── */
+.hero{
+  padding:40px 20px 32px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';
+  position:absolute;
+  top:-40%;left:50%;
+  transform:translateX(-50%);
+  width:280px;height:280px;
+  background:radial-gradient(circle, rgba(232,68,122,0.15) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:0.15em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.hero h1{
+  font-family:'Cormorant Garamond',serif;
+  font-size:44px;
+  font-weight:600;
+  line-height:1.05;
+  margin-bottom:14px;
+  position:relative;
+}
+.hero h1 em{
+  font-style:italic;
+  color:var(--pink);
+}
+.hero p{
+  font-size:14px;
+  color:rgba(251,240,228,0.7);
+  max-width:320px;
+  margin:0 auto 24px;
+  line-height:1.5;
+}
+.hero-cta{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.btn{
+  padding:13px 24px;
+  border-radius:100px;
+  border:none;
+  font-family:'Work Sans',sans-serif;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  letter-spacing:0.01em;
+}
+.btn-primary{
+  background:var(--pink);
+  color:var(--cream);
+}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--cream);
+}
+
+/* ── SECTION LABELS ── */
+.section{padding:8px 20px 32px}
+.section-eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:0.12em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.section-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px;
+  font-weight:600;
+  margin-bottom:18px;
+}
+
+/* ── GALLERY ── */
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+.gallery-item{
+  aspect-ratio:1;
+  border-radius:12px;
+  background:var(--cocoa-light);
+  border:1px solid var(--border);
+  overflow:hidden;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.gallery-item img{width:100%;height:100%;object-fit:cover}
+.gallery-item .placeholder{
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px;
+  color:rgba(251,240,228,0.35);
+  text-align:center;
+  padding:16px;
+}
+.gallery-label{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent, rgba(43,24,16,0.9));
+  padding:16px 10px 8px;
+  font-size:11px;
+  font-weight:600;
+}
+
+/* ── ORDER FLOW ── */
+.order-card{
+  background:var(--cocoa-light);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:14px;
+}
+.field-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:0.08em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+input, select, textarea{
+  width:100%;
+  background:rgba(251,240,228,0.05);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  color:var(--cream);
+  font-family:'Work Sans',sans-serif;
+  font-size:14px;
+  outline:none;
+  margin-bottom:14px;
+}
+textarea{resize:vertical;min-height:70px}
+::placeholder{color:rgba(251,240,228,0.35)}
+
+.pill-group{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pill{
+  padding:9px 16px;
+  border-radius:100px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--cream);
+  font-size:12px;
+  cursor:pointer;
+  font-family:'Work Sans',sans-serif;
+}
+.pill.active{
+  background:var(--pink);
+  border-color:var(--pink);
+  font-weight:600;
+}
+
+.payment-option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:8px;
+  cursor:pointer;
+}
+.payment-option.active{
+  border-color:var(--pink);
+  background:rgba(232,68,122,0.08);
+}
+.payment-option input[type="radio"]{width:auto;margin:0}
+
+/* ── KITCHEN TICKET ── */
+.ticket{
+  background:var(--cream);
+  color:var(--cocoa);
+  border-radius:4px;
+  padding:24px 20px;
+  position:relative;
+  font-family:'IBM Plex Mono',monospace;
+  max-width:320px;
+  margin:0 auto;
+}
+.ticket::before, .ticket::after{
+  content:'';
+  position:absolute;
+  left:0; right:0;
+  height:14px;
+  background:repeating-radial-gradient(circle at 10px 50%, transparent 0, transparent 5px, var(--cocoa) 5px, var(--cocoa) 6px);
+  background-size:20px 20px;
+}
+.ticket::before{top:-7px}
+.ticket::after{bottom:-7px;transform:rotate(180deg)}
+.ticket-header{
+  text-align:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+.ticket-sub{
+  text-align:center;
+  font-size:9px;
+  letter-spacing:0.1em;
+  color:var(--pink-deep);
+  margin-bottom:16px;
+}
+.ticket-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  padding:5px 0;
+  border-bottom:1px dashed rgba(43,24,16,0.15);
+}
+.ticket-total{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  font-weight:700;
+  padding-top:10px;
+  margin-top:6px;
+}
+
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  padding:12px 22px;border-radius:100px;font-size:13px;
+  background:var(--cream);color:var(--cocoa);
+  font-family:'Work Sans',sans-serif;font-weight:600;
+  display:none;z-index:9999;
+}
+
+/* ── STICKY CTA ── */
+.sticky-cta{
+  position:fixed;bottom:0;left:0;right:0;
+  padding:14px 20px;
+  background:var(--cocoa);
+  border-top:1px solid var(--border);
+  z-index:99;
+}
+.sticky-cta .btn{width:100%}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ca<span class="accent">Ken</span></div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="scrollToOrder()">🎂</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">Mjomba Makes · Mjomba Bakes · Ohio</div>
+  <h1>Cakes made<br>with <em>care</em>,<br>delivered with <em>love</em></h1>
+  <p>Custom celebration cakes for birthdays, weddings, and every occasion worth savoring.</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary" onclick="scrollToOrder()">Order a Cake</button>
+    <button class="btn btn-ghost" onclick="scrollToGallery()">See the Gallery</button>
+  </div>
+</div>
+
+<div class="section" id="gallery">
+  <div class="section-eyebrow">Portfolio</div>
+  <div class="section-title">Recent Creations</div>
+  <div class="gallery-grid" id="galleryGrid">
+    <div class="gallery-item"><div class="placeholder">🎂<br>Gallery coming soon</div></div>
+    <div class="gallery-item"><div class="placeholder">🍰<br>Gallery coming soon</div></div>
+    <div class="gallery-item"><div class="placeholder">🧁<br>Gallery coming soon</div></div>
+    <div class="gallery-item"><div class="placeholder">🎉<br>Gallery coming soon</div></div>
+  </div>
+</div>
+
+<div class="section" id="order">
+  <div class="section-eyebrow">Custom Order</div>
+  <div class="section-title">Design Your Cake</div>
+
+  <div class="order-card">
+    <div class="field-label">Occasion</div>
+    <div class="pill-group" id="occasionPills">
+      <button class="pill" data-val="Birthday" onclick="selectPill(this,'occasion')">🎂 Birthday</button>
+      <button class="pill" data-val="Wedding" onclick="selectPill(this,'occasion')">💍 Wedding</button>
+      <button class="pill" data-val="Anniversary" onclick="selectPill(this,'occasion')">💐 Anniversary</button>
+      <button class="pill" data-val="Graduation" onclick="selectPill(this,'occasion')">🎓 Graduation</button>
+      <button class="pill" data-val="Other" onclick="selectPill(this,'occasion')">✨ Other</button>
+    </div>
+
+    <div class="field-label">Size</div>
+    <div class="pill-group" id="sizePills">
+      <button class="pill" data-val="Small (6-8 servings)" onclick="selectPill(this,'size')">Small</button>
+      <button class="pill" data-val="Medium (12-16 servings)" onclick="selectPill(this,'size')">Medium</button>
+      <button class="pill" data-val="Large (24+ servings)" onclick="selectPill(this,'size')">Large</button>
+      <button class="pill" data-val="Custom tiered" onclick="selectPill(this,'size')">Tiered</button>
+    </div>
+
+    <div class="field-label">Flavor</div>
+    <input type="text" id="flavorInput" placeholder="e.g. Chocolate raspberry, vanilla bean...">
+
+    <div class="field-label">Delivery Date</div>
+    <input type="date" id="deliveryDate">
+
+    <div class="field-label">Delivery Address (Ohio area)</div>
+    <input type="text" id="deliveryAddress" placeholder="Street, City">
+
+    <div class="field-label">Design Notes</div>
+    <textarea id="designNotes" placeholder="Describe your dream cake — colors, theme, message..."></textarea>
+
+    <div class="field-label">Your Name</div>
+    <input type="text" id="customerName" placeholder="Full name">
+
+    <div class="field-label">Contact (phone or email)</div>
+    <input type="text" id="customerContact" placeholder="For order confirmation">
+
+    <div class="field-label">Payment Method</div>
+    <div id="paymentOptions">
+      <label class="payment-option active" data-val="Card (Stripe)">
+        <input type="radio" name="payment" checked onclick="selectPayment(this)"> 💳 Card
+      </label>
+      <label class="payment-option" data-val="PayPal">
+        <input type="radio" name="payment" onclick="selectPayment(this)"> 🅿️ PayPal
+      </label>
+      <label class="payment-option" data-val="Venmo">
+        <input type="radio" name="payment" onclick="selectPayment(this)"> 📱 Venmo
+      </label>
+      <label class="payment-option" data-val="Cash on Delivery">
+        <input type="radio" name="payment" onclick="selectPayment(this)"> 💵 Cash on Delivery
+      </label>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="submitOrder()">Place Order Request</button>
+  </div>
+</div>
+
+<div id="ticketSection" class="section" style="display:none">
+  <div class="section-eyebrow">Confirmation</div>
+  <div class="section-title">Your Order Ticket</div>
+  <div class="ticket" id="orderTicket"></div>
+</div>
+
+<div style="height:80px"></div>
+
+<div id="toast"></div>
+
+<script>
+const DB = 'https://riakoine-caken-default-rtdb.firebaseio.com';
+let _selectedOccasion = '';
+let _selectedSize = '';
+let _selectedPayment = 'Card (Stripe)';
+let _orderSeq = parseInt(localStorage.getItem('caken_order_seq')||'0');
+
+window.onerror = function(msg, url, line, col){
+  console.error('JS ERROR:', msg, line, col);
+  return false;
+};
+
+function toast(msg, dur=3000){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', dur);
+}
+
+function scrollToOrder(){ document.getElementById('order').scrollIntoView({behavior:'smooth'}); }
+function scrollToGallery(){ document.getElementById('gallery').scrollIntoView({behavior:'smooth'}); }
+
+function selectPill(btn, group){
+  const container = btn.parentElement;
+  container.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  if(group==='occasion') _selectedOccasion = btn.dataset.val;
+  if(group==='size') _selectedSize = btn.dataset.val;
+}
+
+function selectPayment(radio){
+  document.querySelectorAll('.payment-option').forEach(p=>p.classList.remove('active'));
+  radio.closest('.payment-option').classList.add('active');
+  _selectedPayment = radio.closest('.payment-option').dataset.val;
+}
+
+async function submitOrder(){
+  const flavor = document.getElementById('flavorInput').value.trim();
+  const date = document.getElementById('deliveryDate').value;
+  const address = document.getElementById('deliveryAddress').value.trim();
+  const notes = document.getElementById('designNotes').value.trim();
+  const name = document.getElementById('customerName').value.trim();
+  const contact = document.getElementById('customerContact').value.trim();
+
+  if(!_selectedOccasion){ toast('Please select an occasion'); return; }
+  if(!_selectedSize){ toast('Please select a size'); return; }
+  if(!flavor){ toast('Please enter a flavor'); return; }
+  if(!date){ toast('Please select a delivery date'); return; }
+  if(!address){ toast('Please enter delivery address'); return; }
+  if(!name){ toast('Please enter your name'); return; }
+  if(!contact){ toast('Please enter contact info'); return; }
+
+  _orderSeq++;
+  localStorage.setItem('caken_order_seq', _orderSeq);
+  const orderNo = 'CK-'+String(_orderSeq).padStart(4,'0');
+
+  const order = {
+    orderNo, occasion:_selectedOccasion, size:_selectedSize, flavor, date, address,
+    notes, name, contact, payment:_selectedPayment, status:'pending', ts:Date.now()
+  };
+
+  try{
+    await fetch('/api/orders', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(order)
+    });
+  }catch(e){}
+
+  showTicket(order);
+  toast('🎂 Order request sent to Ken!');
+}
+
+function showTicket(order){
+  const section = document.getElementById('ticketSection');
+  const ticket = document.getElementById('orderTicket');
+  ticket.innerHTML = `
+    <div class="ticket-header">caKen</div>
+    <div class="ticket-sub">ORDER TICKET · ${order.orderNo}</div>
+    <div class="ticket-row"><span>Occasion</span><span>${order.occasion}</span></div>
+    <div class="ticket-row"><span>Size</span><span>${order.size}</span></div>
+    <div class="ticket-row"><span>Flavor</span><span>${order.flavor}</span></div>
+    <div class="ticket-row"><span>Delivery</span><span>${order.date}</span></div>
+    <div class="ticket-row"><span>Payment</span><span>${order.payment}</span></div>
+    <div class="ticket-row"><span>Status</span><span>PENDING</span></div>
+    <div class="ticket-total"><span>Order For</span><span>${order.name}</span></div>
+  `;
+  section.style.display = 'block';
+  section.scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>
