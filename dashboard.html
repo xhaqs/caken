@@ -195,7 +195,10 @@ header{
 <div id="dash">
   <header>
     <div class="logo">ca<span class="accent">Ken</span> Dashboard</div>
-    <button onclick="loadOrders()" style="background:none;border:1px solid var(--border);color:var(--cream);border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">🔄</button>
+    <div style="display:flex;gap:8px">
+      <a href="/" style="background:none;border:1px solid var(--border);color:var(--cream);border-radius:8px;padding:8px 12px;font-size:11px;text-decoration:none;display:flex;align-items:center">🌐 Site</a>
+      <button onclick="loadOrders();loadGallery();loadRecipes()" style="background:none;border:1px solid var(--border);color:var(--cream);border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">🔄</button>
+    </div>
   </header>
 
   <div class="stats-row">
@@ -207,6 +210,7 @@ header{
   <div class="tabs">
     <button class="tab active" onclick="switchDashTab('orders', this)">📋 Orders</button>
     <button class="tab" onclick="switchDashTab('gallery', this)">🖼 Gallery</button>
+    <button class="tab" onclick="switchDashTab('recipes', this)">📖 Recipes</button>
   </div>
 
   <div class="section active" id="sec-orders">
@@ -221,6 +225,40 @@ header{
     <input type="file" id="galleryCameraInput" accept="image/*" capture="environment" style="display:none" onchange="uploadGalleryPhoto(event)">
     <input type="file" id="galleryFileInput" accept="image/*" style="display:none" onchange="uploadGalleryPhoto(event)">
     <div class="gallery-grid" id="galleryGridDash"></div>
+  </div>
+
+  <div class="section" id="sec-recipes">
+    <button onclick="toggleRecipeForm()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px">+ Add Recipe</button>
+
+    <div id="recipeForm" style="display:none;background:var(--cocoa-light);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Recipe Name</div>
+      <input type="text" id="recipeName" placeholder="e.g. Classic Vanilla Cake Base" style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:12px">
+
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Category</div>
+      <select id="recipeCategory" style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:12px">
+        <option value="Cake Base">Cake Base</option>
+        <option value="Frosting">Frosting</option>
+        <option value="Filling">Filling</option>
+        <option value="Decoration">Decoration</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Servings / Yield</div>
+      <input type="text" id="recipeServings" placeholder="e.g. 12 servings, one 9-inch cake" style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:12px">
+
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Ingredients (one per line)</div>
+      <textarea id="recipeIngredients" placeholder="2 cups flour&#10;1 cup sugar&#10;3 eggs..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:12px;min-height:100px;font-family:'IBM Plex Mono',monospace"></textarea>
+
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Steps</div>
+      <textarea id="recipeSteps" placeholder="1. Preheat oven to 350°F&#10;2. Mix dry ingredients..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:12px;min-height:100px"></textarea>
+
+      <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Notes</div>
+      <textarea id="recipeNotes" placeholder="Tips, substitutions, storage notes..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:14px;min-height:60px"></textarea>
+
+      <button onclick="saveRecipe()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Save Recipe</button>
+    </div>
+
+    <div id="recipesList"><div class="empty-state">No recipes yet</div></div>
   </div>
 </div>
 
@@ -245,6 +283,7 @@ function checkPin(){
     document.getElementById('dash').style.display = 'block';
     loadOrders();
     loadGallery();
+    loadRecipes();
   } else {
     toast('Incorrect PIN');
   }
@@ -349,6 +388,95 @@ function renderGallery(){
       <img src="${g.photo}">
     </div>
   `).join('');
+}
+
+let _recipes = {};
+
+function toggleRecipeForm(){
+  const form = document.getElementById('recipeForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadRecipes(){
+  try{
+    const r = await fetch('/api/recipes');
+    _recipes = await r.json();
+    renderRecipes();
+  }catch(e){}
+}
+
+async function saveRecipe(){
+  const name = document.getElementById('recipeName').value.trim();
+  const category = document.getElementById('recipeCategory').value;
+  const servings = document.getElementById('recipeServings').value.trim();
+  const ingredients = document.getElementById('recipeIngredients').value.trim();
+  const steps = document.getElementById('recipeSteps').value.trim();
+  const notes = document.getElementById('recipeNotes').value.trim();
+
+  if(!name || !ingredients){ toast('Please add a name and ingredients'); return; }
+
+  const recipe = { name, category, servings, ingredients, steps, notes, ts: Date.now() };
+
+  try{
+    await fetch('/api/recipes', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(recipe)
+    });
+    toast('📖 Recipe saved');
+    document.getElementById('recipeName').value = '';
+    document.getElementById('recipeServings').value = '';
+    document.getElementById('recipeIngredients').value = '';
+    document.getElementById('recipeSteps').value = '';
+    document.getElementById('recipeNotes').value = '';
+    toggleRecipeForm();
+    loadRecipes();
+  }catch(e){
+    toast('Failed to save recipe','err');
+  }
+}
+
+function renderRecipes(){
+  const el = document.getElementById('recipesList');
+  const entries = Object.entries(_recipes||{}).sort((a,b)=>b[1].ts - a[1].ts);
+  if(!entries.length){
+    el.innerHTML = '<div class="empty-state">No recipes yet</div>';
+    return;
+  }
+  el.innerHTML = entries.map(([key,rec])=>`
+    <div class="order-card" style="cursor:pointer" onclick="toggleRecipeDetail('${key}')">
+      <div class="order-top">
+        <div>
+          <div class="order-no">${rec.category||''}</div>
+          <div class="order-name">${rec.name}</div>
+        </div>
+        <button onclick="event.stopPropagation();deleteRecipe('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:50%;width:26px;height:26px;font-size:12px;cursor:pointer">×</button>
+      </div>
+      ${rec.servings ? '<div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:6px">'+rec.servings+'</div>' : ''}
+      <div id="recipeDetail_${key}" style="display:none;margin-top:10px;font-size:12px;line-height:1.6;color:rgba(251,240,228,0.8)">
+        <div style="font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:10px;text-transform:uppercase;margin-bottom:4px;margin-top:8px">Ingredients</div>
+        <div style="white-space:pre-line;font-family:'IBM Plex Mono',monospace;font-size:11px">${rec.ingredients||''}</div>
+        ${rec.steps ? '<div style="font-family:\'IBM Plex Mono\',monospace;color:var(--gold);font-size:10px;text-transform:uppercase;margin-bottom:4px;margin-top:12px">Steps</div><div style="white-space:pre-line">'+rec.steps+'</div>' : ''}
+        ${rec.notes ? '<div style="font-family:\'IBM Plex Mono\',monospace;color:var(--gold);font-size:10px;text-transform:uppercase;margin-bottom:4px;margin-top:12px">Notes</div><div style="white-space:pre-line">'+rec.notes+'</div>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleRecipeDetail(key){
+  const el = document.getElementById('recipeDetail_'+key);
+  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function deleteRecipe(key){
+  if(!confirm('Delete this recipe?')) return;
+  try{
+    await fetch('/api/recipes?key='+key, { method:'DELETE' });
+    toast('Recipe deleted');
+    loadRecipes();
+  }catch(e){
+    toast('Failed to delete','err');
+  }
 }
 
 function compressImage(file, maxDim, quality){
