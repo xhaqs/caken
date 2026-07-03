@@ -350,25 +350,45 @@ function renderGallery(){
   `).join('');
 }
 
-function uploadGalleryPhoto(e){
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = h*(maxDim/w); w = maxDim; }
+        else if(h > maxDim){ w = w*(maxDim/h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadGalleryPhoto(e){
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    const photo = ev.target.result;
-    try{
-      await fetch('/api/gallery', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({photo, ts: Date.now()})
-      });
-      toast('📷 Photo added to gallery');
-      loadGallery();
-    }catch(e){
-      toast('Upload failed','err');
-    }
-  };
-  reader.readAsDataURL(file);
+  toast('Compressing photo...');
+  try{
+    const photo = await compressImage(file, 1000, 0.75);
+    await fetch('/api/gallery', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({photo, ts: Date.now()})
+    });
+    toast('📷 Photo added to gallery');
+    loadGallery();
+  }catch(err){
+    toast('Upload failed','err');
+  }
 }
 </script>
 </body>

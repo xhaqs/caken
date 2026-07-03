@@ -441,6 +441,14 @@ textarea{resize:vertical;min-height:70px}
   <div class="section-eyebrow">Confirmation</div>
   <div class="section-title">Your Order Ticket</div>
   <div class="ticket" id="orderTicket"></div>
+  <div style="max-width:320px;margin:16px auto 0;text-align:center">
+    <div style="font-size:11px;color:rgba(251,240,228,0.6);margin-bottom:10px">Help make sure Ken sees your order right away:</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <a id="smsKenBtn" href="#" style="background:var(--cocoa-light);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:10px 16px;font-size:12px;text-decoration:none">💬 Text Ken</a>
+      <a id="waKenBtn" href="#" style="background:var(--cocoa-light);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:10px 16px;font-size:12px;text-decoration:none">📱 WhatsApp Ken</a>
+      <a id="tgKenBtn" href="#" style="background:var(--cocoa-light);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:10px 16px;font-size:12px;text-decoration:none">✈️ Telegram Ken</a>
+    </div>
+  </div>
 </div>
 
 <div style="height:80px"></div>
@@ -536,6 +544,13 @@ function showTicket(order){
   `;
   section.style.display = 'block';
   section.scrollIntoView({behavior:'smooth'});
+
+  const kenPhone = '16145989253';
+  const msg = 'New caKen order! '+order.orderNo+' — '+order.occasion+', '+order.size+', flavor: '+order.flavor+'. Delivery '+order.date+' to '+order.address+'. From '+order.name+' ('+order.contact+'). Payment: '+order.payment+(order.notes?'. Notes: '+order.notes:'');
+  const encodedMsg = encodeURIComponent(msg);
+  document.getElementById('smsKenBtn').href = 'sms:+'+kenPhone+'?body='+encodedMsg;
+  document.getElementById('waKenBtn').href = 'https://wa.me/'+kenPhone+'?text='+encodedMsg;
+  document.getElementById('tgKenBtn').href = 'https://t.me/+'+kenPhone+'?text='+encodedMsg;
 }
 </script>
 </body>
