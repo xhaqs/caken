@@ -208,7 +208,10 @@ header{
   </div>
 
   <div id="remindersBanner" style="display:none;margin:0 20px 16px;background:rgba(232,68,122,0.1);border:1px solid rgba(232,68,122,0.3);border-radius:14px;padding:16px">
-    <div style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:8px">🔔 Needs Your Attention</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--pink)">🔔 Needs Your Attention</div>
+      <button onclick="dismissAllReminders()" style="background:none;border:1px solid var(--border);color:rgba(251,240,228,0.6);border-radius:100px;padding:3px 10px;font-size:10px;cursor:pointer">Dismiss all</button>
+    </div>
     <div id="remindersList" style="font-size:12px;line-height:1.7;color:rgba(251,240,228,0.85);margin-bottom:12px"></div>
     <a id="textMeBtn" href="#" style="display:inline-block;background:var(--pink);color:var(--cream);border-radius:100px;padding:9px 16px;font-size:12px;font-weight:600;text-decoration:none">📱 Text Me This Reminder</a>
   </div>
@@ -871,12 +874,17 @@ if('Notification' in window && Notification.permission === 'default'){
 function checkReminders(){
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  const dismissedRaw = JSON.parse(localStorage.getItem('caken_dismissed')||'{}');
+  const dismissed = dismissedRaw.date === today ? (dismissedRaw.ids||[]) : [];
+  if(dismissedRaw.date !== today){
+    localStorage.setItem('caken_dismissed', JSON.stringify({date:today, ids:[]}));
+  }
 
-  const upcomingOrders = Object.values(_orders||{}).filter(o=>
-    (o.date === today || o.date === tomorrow) && o.status !== 'delivered'
+  const upcomingOrders = Object.entries(_orders||{}).filter(([k,o])=>
+    (o.date === today || o.date === tomorrow) && o.status !== 'delivered' && !dismissed.includes('order_'+k)
   );
-  const lowStockItems = Object.values(_inventory||{}).filter(i=>
-    i.threshold > 0 && i.quantity <= i.threshold
+  const lowStockItems = Object.entries(_inventory||{}).filter(([k,i])=>
+    i.threshold > 0 && i.quantity <= i.threshold && !dismissed.includes('stock_'+k)
   );
 
   const banner = document.getElementById('remindersBanner');
@@ -887,27 +895,51 @@ function checkReminders(){
     return;
   }
 
-  let items = [];
-  upcomingOrders.forEach(o=>{
+  let itemsHtml = [];
+  let smsLines = [];
+  upcomingOrders.forEach(([k,o])=>{
     const when = o.date === today ? 'TODAY' : 'TOMORROW';
-    items.push('🎂 '+when+': '+o.name+' — '+o.occasion+' ('+o.orderNo+')');
+    const text = '🎂 '+when+': '+o.name+' — '+o.occasion+' ('+o.orderNo+')';
+    smsLines.push(text);
+    itemsHtml.push('<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+text+'</span><button onclick="dismissReminder(\'order_'+k+'\')" style="background:none;border:none;color:rgba(251,240,228,0.4);font-size:14px;cursor:pointer;flex-shrink:0">×</button></div>');
   });
-  if(lowStockItems.length){
-    items.push('📦 Low stock: '+lowStockItems.map(i=>i.name).join(', '));
-  }
+  lowStockItems.forEach(([k,i])=>{
+    const text = '📦 Low stock: '+i.name+' ('+i.quantity+' '+(i.unit||'')+' left)';
+    smsLines.push(text);
+    itemsHtml.push('<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+text+'</span><button onclick="dismissReminder(\'stock_'+k+'\')" style="background:none;border:none;color:rgba(251,240,228,0.4);font-size:14px;cursor:pointer;flex-shrink:0">×</button></div>');
+  });
 
-  list.innerHTML = items.map(t=>'<div>'+t+'</div>').join('');
+  list.innerHTML = itemsHtml.join('');
   banner.style.display = 'block';
 
-  const smsText = 'caKen Reminders:\n'+items.join('\n');
+  const smsText = 'caKen Reminders:\n'+smsLines.join('\n');
   document.getElementById('textMeBtn').href = 'sms:+16145989253?body='+encodeURIComponent(smsText);
 
   if('Notification' in window && Notification.permission === 'granted'){
     if(!sessionStorage.getItem('caken_reminders_shown')){
-      new Notification('caKen — Needs Your Attention', { body: items.join(' | ') });
+      new Notification('caKen — Needs Your Attention', { body: smsLines.join(' | ') });
       sessionStorage.setItem('caken_reminders_shown', '1');
     }
   }
+}
+
+function dismissReminder(id){
+  const today = new Date().toISOString().slice(0,10);
+  const stored = JSON.parse(localStorage.getItem('caken_dismissed')||'{}');
+  const ids = stored.date === today ? (stored.ids||[]) : [];
+  ids.push(id);
+  localStorage.setItem('caken_dismissed', JSON.stringify({date:today, ids}));
+  checkReminders();
+}
+
+function dismissAllReminders(){
+  const today = new Date().toISOString().slice(0,10);
+  const allIds = [
+    ...Object.keys(_orders||{}).map(k=>'order_'+k),
+    ...Object.keys(_inventory||{}).map(k=>'stock_'+k)
+  ];
+  localStorage.setItem('caken_dismissed', JSON.stringify({date:today, ids:allIds}));
+  document.getElementById('remindersBanner').style.display = 'none';
 }
 
 function compressImage(file, maxDim, quality){
