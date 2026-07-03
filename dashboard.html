@@ -279,10 +279,33 @@ header{
       <input type="text" id="invName" placeholder="Ingredient name (e.g. Flour)" style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:10px">
       <div style="display:flex;gap:8px;margin-bottom:10px">
         <input type="number" id="invQuantity" placeholder="Qty" style="flex:1;min-width:0;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none">
-        <input type="text" id="invUnit" placeholder="Unit" style="flex:1;min-width:0;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none">
+        <select id="invUnitSelect" onchange="handleUnitChange()" style="flex:1;min-width:0;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none">
+          <option value="">Unit...</option>
+          <option value="cups">cups</option>
+          <option value="lbs">lbs</option>
+          <option value="oz">oz</option>
+          <option value="tsp">tsp</option>
+          <option value="tbsp">tbsp</option>
+          <option value="grams">grams</option>
+          <option value="kg">kg</option>
+          <option value="mL">mL</option>
+          <option value="L">L</option>
+          <option value="pieces">pieces</option>
+          <option value="__custom__">✨ Other...</option>
+        </select>
       </div>
+      <input type="text" id="invUnitCustom" placeholder="Enter custom unit" style="display:none;width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:10px">
       <input type="number" id="invThreshold" placeholder="Low stock alert below..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:14px">
       <button onclick="saveInventoryItem()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Save Ingredient</button>
+    </div>
+
+    <div style="background:var(--cocoa-light);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--gold);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;margin-bottom:8px">🛒 Shop for Ingredients</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="https://www.amazon.com/s?k=baking+ingredients" target="_blank" style="background:rgba(251,240,228,0.05);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:8px 14px;font-size:11px;text-decoration:none">Amazon</a>
+        <a href="https://www.walmart.com/search?q=baking+ingredients" target="_blank" style="background:rgba(251,240,228,0.05);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:8px 14px;font-size:11px;text-decoration:none">Walmart</a>
+        <a href="https://www.instacart.com/store/s?k=baking+ingredients" target="_blank" style="background:rgba(251,240,228,0.05);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:8px 14px;font-size:11px;text-decoration:none">Instacart</a>
+      </div>
     </div>
 
     <div id="lowStockBanner" style="display:none;background:rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3);border-radius:12px;padding:14px;margin-bottom:14px">
@@ -627,10 +650,23 @@ async function loadInventory(){
   }catch(e){}
 }
 
+function handleUnitChange(){
+  const select = document.getElementById('invUnitSelect');
+  const custom = document.getElementById('invUnitCustom');
+  if(select.value === '__custom__'){
+    custom.style.display = 'block';
+    custom.value = '';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+  }
+}
+
 async function saveInventoryItem(){
   const name = document.getElementById('invName').value.trim();
   const quantity = parseFloat(document.getElementById('invQuantity').value) || 0;
-  const unit = document.getElementById('invUnit').value.trim();
+  const unitSelect = document.getElementById('invUnitSelect').value;
+  const unit = unitSelect === '__custom__' ? document.getElementById('invUnitCustom').value.trim() : unitSelect;
   const threshold = parseFloat(document.getElementById('invThreshold').value) || 0;
 
   if(!name){ toast('Please enter an ingredient name'); return; }
@@ -644,7 +680,9 @@ async function saveInventoryItem(){
     toast('📦 Ingredient added');
     document.getElementById('invName').value = '';
     document.getElementById('invQuantity').value = '';
-    document.getElementById('invUnit').value = '';
+    document.getElementById('invUnitSelect').value = '';
+    document.getElementById('invUnitCustom').value = '';
+    document.getElementById('invUnitCustom').style.display = 'none';
     document.getElementById('invThreshold').value = '';
     toggleInventoryForm();
     loadInventory();
