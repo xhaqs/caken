@@ -492,8 +492,11 @@ let _selectedPayment = 'Card (Stripe)';
 let _orderSeq = parseInt(localStorage.getItem('caken_order_seq')||'0');
 
 window.onerror = function(msg, url, line, col){
-  console.error('JS ERROR:', msg, line, col);
+  alert('JS ERROR: '+msg+' | line:'+line+' col:'+col);
   return false;
+};
+window.onunhandledrejection = function(event){
+  alert('PROMISE ERROR: '+(event.reason && event.reason.message ? event.reason.message : event.reason));
 };
 
 async function loadPortfolioGallery(){
