@@ -212,6 +212,7 @@ header{
     <button class="tab" onclick="switchDashTab('gallery', this)">🖼 Gallery</button>
     <button class="tab" onclick="switchDashTab('recipes', this)">📖 Recipes</button>
     <button class="tab" onclick="switchDashTab('kitchen', this)">👨‍🍳 Ken's Kitchen</button>
+    <button class="tab" onclick="switchDashTab('inventory', this)">📦 Inventory</button>
   </div>
 
   <div class="section active" id="sec-orders">
@@ -270,6 +271,31 @@ header{
       <button onclick="sendChefMessage()" style="background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:0 18px;font-size:14px;cursor:pointer">➤</button>
     </div>
   </div>
+
+  <div class="section" id="sec-inventory">
+    <button onclick="toggleInventoryForm()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px">+ Add Ingredient</button>
+
+    <div id="inventoryForm" style="display:none;background:var(--cocoa-light);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+      <input type="text" id="invName" placeholder="Ingredient name (e.g. Flour)" style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:10px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="number" id="invQuantity" placeholder="Quantity" style="flex:1;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none">
+        <input type="text" id="invUnit" placeholder="Unit (cups, lbs...)" style="flex:1;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none">
+      </div>
+      <input type="number" id="invThreshold" placeholder="Low stock alert below..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:14px;outline:none;margin-bottom:14px">
+      <button onclick="saveInventoryItem()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Save Ingredient</button>
+    </div>
+
+    <div id="lowStockBanner" style="display:none;background:rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#f87171;margin-bottom:8px">⚠️ Running Low</div>
+      <div id="lowStockList" style="font-size:11px;color:rgba(251,240,228,0.8);margin-bottom:10px"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a id="shopAmazonBtn" href="#" target="_blank" style="background:var(--cocoa-light);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:8px 14px;font-size:11px;text-decoration:none">🛒 Amazon</a>
+        <a id="shopWalmartBtn" href="#" target="_blank" style="background:var(--cocoa-light);border:1px solid var(--border);color:var(--cream);border-radius:100px;padding:8px 14px;font-size:11px;text-decoration:none">🛒 Walmart</a>
+      </div>
+    </div>
+
+    <div id="inventoryList"><div class="empty-state">No ingredients tracked yet</div></div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -294,6 +320,7 @@ function checkPin(){
     loadOrders();
     loadGallery();
     loadRecipes();
+    loadInventory();
   } else {
     toast('Incorrect PIN');
   }
@@ -582,6 +609,115 @@ async function sendChefMessage(){
   }catch(e){
     _chatHistory.push({role:'assistant', content:'Connection error — try again.'});
     renderChatMessages();
+  }
+}
+
+let _inventory = {};
+
+function toggleInventoryForm(){
+  const form = document.getElementById('inventoryForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadInventory(){
+  try{
+    const r = await fetch('/api/inventory');
+    _inventory = await r.json();
+    renderInventory();
+  }catch(e){}
+}
+
+async function saveInventoryItem(){
+  const name = document.getElementById('invName').value.trim();
+  const quantity = parseFloat(document.getElementById('invQuantity').value) || 0;
+  const unit = document.getElementById('invUnit').value.trim();
+  const threshold = parseFloat(document.getElementById('invThreshold').value) || 0;
+
+  if(!name){ toast('Please enter an ingredient name'); return; }
+
+  try{
+    await fetch('/api/inventory', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, quantity, unit, threshold, ts: Date.now()})
+    });
+    toast('📦 Ingredient added');
+    document.getElementById('invName').value = '';
+    document.getElementById('invQuantity').value = '';
+    document.getElementById('invUnit').value = '';
+    document.getElementById('invThreshold').value = '';
+    toggleInventoryForm();
+    loadInventory();
+  }catch(e){
+    toast('Failed to save','err');
+  }
+}
+
+function renderInventory(){
+  const el = document.getElementById('inventoryList');
+  const entries = Object.entries(_inventory||{}).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+
+  const lowStock = entries.filter(([k,i])=>i.threshold > 0 && i.quantity <= i.threshold);
+  const banner = document.getElementById('lowStockBanner');
+  if(lowStock.length){
+    banner.style.display = 'block';
+    document.getElementById('lowStockList').innerHTML = lowStock.map(([k,i])=>i.name+' ('+i.quantity+' '+(i.unit||'')+' left)').join(', ');
+    const query = lowStock.map(([k,i])=>i.name).join(' ');
+    document.getElementById('shopAmazonBtn').href = 'https://www.amazon.com/s?k='+encodeURIComponent(query+' baking ingredients');
+    document.getElementById('shopWalmartBtn').href = 'https://www.walmart.com/search?q='+encodeURIComponent(query+' baking ingredients');
+  } else {
+    banner.style.display = 'none';
+  }
+
+  if(!entries.length){
+    el.innerHTML = '<div class="empty-state">No ingredients tracked yet</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(([key,item])=>{
+    const isLow = item.threshold > 0 && item.quantity <= item.threshold;
+    return `
+    <div class="order-card" style="${isLow?'border-color:rgba(220,38,38,0.4)':''}">
+      <div class="order-top">
+        <div>
+          <div class="order-name">${item.name}${isLow?' ⚠️':''}</div>
+          <div style="font-size:11px;color:rgba(251,240,228,0.5)">${item.quantity} ${item.unit||''}${item.threshold?' (alert below '+item.threshold+')':''}</div>
+        </div>
+        <button onclick="deleteInventoryItem('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:50%;width:24px;height:24px;font-size:11px;cursor:pointer">×</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button onclick="adjustInventory('${key}', -1)" style="flex:1;background:rgba(251,240,228,0.05);border:1px solid var(--border);color:var(--cream);border-radius:8px;padding:8px;cursor:pointer">−</button>
+        <button onclick="adjustInventory('${key}', 1)" style="flex:1;background:rgba(251,240,228,0.05);border:1px solid var(--border);color:var(--cream);border-radius:8px;padding:8px;cursor:pointer">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function adjustInventory(key, delta){
+  const item = _inventory[key];
+  if(!item) return;
+  const newQty = Math.max(0, (item.quantity||0) + delta);
+  try{
+    await fetch('/api/inventory', {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key, quantity:newQty})
+    });
+    item.quantity = newQty;
+    renderInventory();
+  }catch(e){
+    toast('Failed to update','err');
+  }
+}
+
+async function deleteInventoryItem(key){
+  if(!confirm('Remove this ingredient from tracking?')) return;
+  try{
+    await fetch('/api/inventory?key='+key, { method:'DELETE' });
+    toast('Ingredient removed');
+    loadInventory();
+  }catch(e){
+    toast('Failed to delete','err');
   }
 }
 
