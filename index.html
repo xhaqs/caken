@@ -371,10 +371,7 @@ textarea{resize:vertical;min-height:70px}
   <div class="section-eyebrow">Portfolio</div>
   <div class="section-title">Recent Creations</div>
   <div class="gallery-grid" id="galleryGrid">
-    <div class="gallery-item"><div class="placeholder">🎂<br>Gallery coming soon</div></div>
-    <div class="gallery-item"><div class="placeholder">🍰<br>Gallery coming soon</div></div>
-    <div class="gallery-item"><div class="placeholder">🧁<br>Gallery coming soon</div></div>
-    <div class="gallery-item"><div class="placeholder">🎉<br>Gallery coming soon</div></div>
+    <div class="gallery-item"><div class="placeholder">🎂<br>Loading...</div></div>
   </div>
 </div>
 
@@ -481,6 +478,24 @@ window.onerror = function(msg, url, line, col){
   console.error('JS ERROR:', msg, line, col);
   return false;
 };
+
+async function loadPortfolioGallery(){
+  const el = document.getElementById('galleryGrid');
+  try{
+    const r = await fetch('/api/gallery');
+    const gallery = await r.json();
+    const entries = Object.values(gallery||{}).sort((a,b)=>b.ts-a.ts);
+    if(!entries.length){
+      el.innerHTML = '<div class="gallery-item"><div class="placeholder">🎂<br>Gallery coming soon</div></div>'
+        + '<div class="gallery-item"><div class="placeholder">🍰<br>Gallery coming soon</div></div>';
+      return;
+    }
+    el.innerHTML = entries.map(g=>'<div class="gallery-item"><img src="'+g.photo+'"></div>').join('');
+  }catch(e){
+    el.innerHTML = '<div class="gallery-item"><div class="placeholder">🎂<br>Gallery coming soon</div></div>';
+  }
+}
+loadPortfolioGallery();
 
 function toast(msg, dur=3000){
   const el = document.getElementById('toast');

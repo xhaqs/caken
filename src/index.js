@@ -230,6 +230,13 @@ async function handleGallery(request) {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
       });
     }
+    if (request.method === 'DELETE') {
+      const key = new URL(request.url).searchParams.get('key');
+      await fetch(DB + '/caken/gallery/' + key + '.json', { method: 'DELETE' });
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
