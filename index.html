@@ -400,7 +400,21 @@ textarea{resize:vertical;min-height:70px}
     </div>
 
     <div class="field-label">Flavor</div>
-    <input type="text" id="flavorInput" placeholder="e.g. Chocolate raspberry, vanilla bean...">
+    <select id="flavorSelect" onchange="handleFlavorChange()">
+      <option value="">Select a flavor...</option>
+      <option value="Chocolate">Chocolate</option>
+      <option value="Vanilla">Vanilla</option>
+      <option value="Red Velvet">Red Velvet</option>
+      <option value="Lemon">Lemon</option>
+      <option value="Carrot">Carrot</option>
+      <option value="Funfetti">Funfetti</option>
+      <option value="Strawberry">Strawberry</option>
+      <option value="Marble">Marble</option>
+      <option value="Chocolate Raspberry">Chocolate Raspberry</option>
+      <option value="Vanilla Bean">Vanilla Bean</option>
+      <option value="__custom__">✨ Something else...</option>
+    </select>
+    <input type="text" id="flavorInput" placeholder="Describe your flavor..." style="display:none">
 
     <div class="field-label">Delivery Date</div>
     <input type="date" id="deliveryDate">
@@ -472,6 +486,19 @@ function toast(msg, dur=3000){
   el.textContent = msg;
   el.style.display = 'block';
   setTimeout(()=>el.style.display='none', dur);
+}
+
+function handleFlavorChange(){
+  const select = document.getElementById('flavorSelect');
+  const input = document.getElementById('flavorInput');
+  if(select.value === '__custom__'){
+    input.style.display = 'block';
+    input.value = '';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = select.value;
+  }
 }
 
 function scrollToOrder(){ document.getElementById('order').scrollIntoView({behavior:'smooth'}); }

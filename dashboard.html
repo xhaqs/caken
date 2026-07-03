@@ -214,10 +214,11 @@ header{
   </div>
 
   <div class="section" id="sec-gallery">
-    <div class="gallery-upload" onclick="document.getElementById('galleryFileInput').click()">
-      <div style="font-size:24px;margin-bottom:6px">📷</div>
-      <div style="font-size:12px">Tap to add a photo to the gallery</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button onclick="document.getElementById('galleryCameraInput').click()" style="flex:1;background:var(--cocoa-light);border:1px dashed var(--border);border-radius:14px;padding:16px;color:var(--cream);cursor:pointer;font-size:12px">📷<br>Take Photo</button>
+      <button onclick="document.getElementById('galleryFileInput').click()" style="flex:1;background:var(--cocoa-light);border:1px dashed var(--border);border-radius:14px;padding:16px;color:var(--cream);cursor:pointer;font-size:12px">🖼<br>Choose from Gallery</button>
     </div>
+    <input type="file" id="galleryCameraInput" accept="image/*" capture="environment" style="display:none" onchange="uploadGalleryPhoto(event)">
     <input type="file" id="galleryFileInput" accept="image/*" style="display:none" onchange="uploadGalleryPhoto(event)">
     <div class="gallery-grid" id="galleryGridDash"></div>
   </div>
