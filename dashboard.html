@@ -219,6 +219,7 @@ header{
     <button class="tab" onclick="switchDashTab('recipes', this)">📖 Recipes</button>
     <button class="tab" onclick="switchDashTab('kitchen', this)">👨‍🍳 Ken's Kitchen</button>
     <button class="tab" onclick="switchDashTab('inventory', this)">📦 Inventory</button>
+    <button class="tab" onclick="switchDashTab('settings', this)">⚙️ Settings</button>
   </div>
 
   <div class="section active" id="sec-orders">
@@ -328,6 +329,24 @@ header{
 
     <div id="inventoryList"><div class="empty-state">No ingredients tracked yet</div></div>
   </div>
+
+  <div class="section" id="sec-settings">
+    <div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:16px">Once you set up a Stripe account, create a Payment Link for each size and paste them here. Customers who choose "Card" will be sent straight to secure checkout.</div>
+
+    <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Small Cake — Stripe Link</div>
+    <input type="text" id="stripeSmall" placeholder="https://buy.stripe.com/..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:12px">
+
+    <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Medium Cake — Stripe Link</div>
+    <input type="text" id="stripeMedium" placeholder="https://buy.stripe.com/..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:12px">
+
+    <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Large Cake — Stripe Link</div>
+    <input type="text" id="stripeLarge" placeholder="https://buy.stripe.com/..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:12px">
+
+    <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Custom Tiered — Stripe Link</div>
+    <input type="text" id="stripeTiered" placeholder="https://buy.stripe.com/..." style="width:100%;background:rgba(251,240,228,0.05);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none;margin-bottom:16px">
+
+    <button onclick="saveSettings()" style="width:100%;background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Save Payment Links</button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -353,6 +372,7 @@ function checkPin(){
     loadGallery();
     loadRecipes();
     loadInventory();
+    loadSettings();
     setTimeout(checkReminders, 800);
   } else {
     toast('Incorrect PIN');
@@ -766,6 +786,36 @@ async function deleteInventoryItem(key){
     loadInventory();
   }catch(e){
     toast('Failed to delete','err');
+  }
+}
+
+async function loadSettings(){
+  try{
+    const r = await fetch('/api/settings');
+    const s = await r.json();
+    if(s.stripeSmall) document.getElementById('stripeSmall').value = s.stripeSmall;
+    if(s.stripeMedium) document.getElementById('stripeMedium').value = s.stripeMedium;
+    if(s.stripeLarge) document.getElementById('stripeLarge').value = s.stripeLarge;
+    if(s.stripeTiered) document.getElementById('stripeTiered').value = s.stripeTiered;
+  }catch(e){}
+}
+
+async function saveSettings(){
+  const settings = {
+    stripeSmall: document.getElementById('stripeSmall').value.trim(),
+    stripeMedium: document.getElementById('stripeMedium').value.trim(),
+    stripeLarge: document.getElementById('stripeLarge').value.trim(),
+    stripeTiered: document.getElementById('stripeTiered').value.trim()
+  };
+  try{
+    await fetch('/api/settings', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(settings)
+    });
+    toast('⚙️ Payment links saved');
+  }catch(e){
+    toast('Failed to save','err');
   }
 }
 

@@ -34,6 +34,10 @@ export default {
       return handleInventory(request, url);
     }
 
+    if (url.pathname === '/api/settings') {
+      return handleSettings(request);
+    }
+
     const assetResponse = await env.ASSETS.fetch(request);
     const newResponse = new Response(assetResponse.body, assetResponse);
     newResponse.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://riakoine-caken-default-rtdb.firebaseio.com; img-src 'self' data: blob:; media-src 'self' data: blob:; base-uri 'self'");
@@ -80,6 +84,33 @@ async function handleOrders(request) {
       await fetch(DB + '/caken/orders/' + key + '.json', { method: 'DELETE' });
       return new Response(JSON.stringify({ ok: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+async function handleSettings(request) {
+  try {
+    if (request.method === 'POST') {
+      const body = await request.json();
+      const r = await fetch(DB + '/caken/settings.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      return new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+      });
+    }
+    if (request.method === 'GET') {
+      const r = await fetch(DB + '/caken/settings.json');
+      const data = await r.json();
+      return new Response(JSON.stringify(data || {}), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
       });
     }
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });

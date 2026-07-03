@@ -496,6 +496,20 @@ async function loadPortfolioGallery(){
   }
 }
 loadPortfolioGallery();
+checkPaymentSuccess();
+
+function checkPaymentSuccess(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('payment') === 'success'){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(43,24,16,0.97);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center';
+    overlay.innerHTML = '<div style="font-size:48px;margin-bottom:16px">🎂💕</div>'
+      + '<div class="display" style="font-size:30px;font-weight:700;color:var(--pink);margin-bottom:10px">Thank You!</div>'
+      + '<div style="font-size:14px;color:rgba(251,240,228,0.8);max-width:280px;line-height:1.6;margin-bottom:24px">Your payment is confirmed and your order is officially in the books. Mjomba can\'t wait to bake something wonderful for you.</div>'
+      + '<button onclick="this.parentElement.remove();window.history.replaceState({},\'\',window.location.pathname)" style="background:var(--pink);color:var(--cream);border:none;border-radius:100px;padding:13px 28px;font-size:13px;font-weight:600;cursor:pointer">Done</button>';
+    document.body.appendChild(overlay);
+  }
+}
 
 function toast(msg, dur=3000){
   const el = document.getElementById('toast');
@@ -567,11 +581,11 @@ async function submitOrder(){
     });
   }catch(e){}
 
-  showTicket(order);
+  await showTicket(order);
   toast('🎂 Order request sent to Ken!');
 }
 
-function showTicket(order){
+async function showTicket(order){
   const section = document.getElementById('ticketSection');
   const ticket = document.getElementById('orderTicket');
   ticket.innerHTML = `
@@ -587,6 +601,24 @@ function showTicket(order){
   `;
   section.style.display = 'block';
   section.scrollIntoView({behavior:'smooth'});
+
+  if(order.payment === 'Card (Stripe)'){
+    try{
+      const r = await fetch('/api/settings');
+      const settings = await r.json();
+      const sizeMap = {'Small (6-8 servings)':'stripeSmall','Medium (12-16 servings)':'stripeMedium','Large (24+ servings)':'stripeLarge','Custom tiered':'stripeTiered'};
+      const linkKey = sizeMap[order.size];
+      const link = settings[linkKey];
+      if(link){
+        const btn = document.createElement('a');
+        btn.href = link;
+        btn.target = '_blank';
+        btn.textContent = '💳 Complete Payment';
+        btn.style.cssText = 'display:block;text-align:center;background:var(--pink);color:var(--cream);border-radius:100px;padding:13px;font-size:13px;font-weight:600;text-decoration:none;max-width:320px;margin:14px auto 0';
+        ticket.parentElement.insertBefore(btn, ticket.nextSibling);
+      }
+    }catch(e){}
+  }
 
   const kenPhone = '16145989253';
   const msg = 'New caKen order! '+order.orderNo+' — '+order.occasion+', '+order.size+', flavor: '+order.flavor+'. Delivery '+order.date+' to '+order.address+'. From '+order.name+' ('+order.contact+'). Payment: '+order.payment+(order.notes?'. Notes: '+order.notes:'');
