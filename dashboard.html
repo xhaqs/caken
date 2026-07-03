@@ -207,6 +207,12 @@ header{
     <div class="stat-card"><div class="stat-num" id="statWeek">0</div><div class="stat-label">This Week</div></div>
   </div>
 
+  <div id="remindersBanner" style="display:none;margin:0 20px 16px;background:rgba(232,68,122,0.1);border:1px solid rgba(232,68,122,0.3);border-radius:14px;padding:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:8px">🔔 Needs Your Attention</div>
+    <div id="remindersList" style="font-size:12px;line-height:1.7;color:rgba(251,240,228,0.85);margin-bottom:12px"></div>
+    <a id="textMeBtn" href="#" style="display:inline-block;background:var(--pink);color:var(--cream);border-radius:100px;padding:9px 16px;font-size:12px;font-weight:600;text-decoration:none">📱 Text Me This Reminder</a>
+  </div>
+
   <div class="tabs" style="flex-wrap:wrap">
     <button class="tab active" onclick="switchDashTab('orders', this)">📋 Orders</button>
     <button class="tab" onclick="switchDashTab('gallery', this)">🖼 Gallery</button>
@@ -347,6 +353,7 @@ function checkPin(){
     loadGallery();
     loadRecipes();
     loadInventory();
+    setTimeout(checkReminders, 800);
   } else {
     toast('Incorrect PIN');
   }
@@ -759,6 +766,52 @@ async function deleteInventoryItem(key){
     loadInventory();
   }catch(e){
     toast('Failed to delete','err');
+  }
+}
+
+if('Notification' in window && Notification.permission === 'default'){
+  Notification.requestPermission();
+}
+
+function checkReminders(){
+  const today = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+
+  const upcomingOrders = Object.values(_orders||{}).filter(o=>
+    (o.date === today || o.date === tomorrow) && o.status !== 'delivered'
+  );
+  const lowStockItems = Object.values(_inventory||{}).filter(i=>
+    i.threshold > 0 && i.quantity <= i.threshold
+  );
+
+  const banner = document.getElementById('remindersBanner');
+  const list = document.getElementById('remindersList');
+
+  if(!upcomingOrders.length && !lowStockItems.length){
+    banner.style.display = 'none';
+    return;
+  }
+
+  let items = [];
+  upcomingOrders.forEach(o=>{
+    const when = o.date === today ? 'TODAY' : 'TOMORROW';
+    items.push('🎂 '+when+': '+o.name+' — '+o.occasion+' ('+o.orderNo+')');
+  });
+  if(lowStockItems.length){
+    items.push('📦 Low stock: '+lowStockItems.map(i=>i.name).join(', '));
+  }
+
+  list.innerHTML = items.map(t=>'<div>'+t+'</div>').join('');
+  banner.style.display = 'block';
+
+  const smsText = 'caKen Reminders:\n'+items.join('\n');
+  document.getElementById('textMeBtn').href = 'sms:+16145989253?body='+encodeURIComponent(smsText);
+
+  if('Notification' in window && Notification.permission === 'granted'){
+    if(!sessionStorage.getItem('caken_reminders_shown')){
+      new Notification('caKen — Needs Your Attention', { body: items.join(' | ') });
+      sessionStorage.setItem('caken_reminders_shown', '1');
+    }
   }
 }
 
