@@ -207,10 +207,11 @@ header{
     <div class="stat-card"><div class="stat-num" id="statWeek">0</div><div class="stat-label">This Week</div></div>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" style="flex-wrap:wrap">
     <button class="tab active" onclick="switchDashTab('orders', this)">📋 Orders</button>
     <button class="tab" onclick="switchDashTab('gallery', this)">🖼 Gallery</button>
     <button class="tab" onclick="switchDashTab('recipes', this)">📖 Recipes</button>
+    <button class="tab" onclick="switchDashTab('kitchen', this)">👨‍🍳 Ken's Kitchen</button>
   </div>
 
   <div class="section active" id="sec-orders">
@@ -259,6 +260,15 @@ header{
     </div>
 
     <div id="recipesList"><div class="empty-state">No recipes yet</div></div>
+  </div>
+
+  <div class="section" id="sec-kitchen">
+    <div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:14px">Ask about recipes, substitutions, techniques, or cake design ideas.</div>
+    <div id="chatMessages" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:420px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="chatInput" placeholder="Ask Chef AI..." style="flex:1;background:var(--cocoa-light);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none" onkeypress="if(event.key==='Enter')sendChefMessage()">
+      <button onclick="sendChefMessage()" style="background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:0 18px;font-size:14px;cursor:pointer">➤</button>
+    </div>
   </div>
 </div>
 
@@ -386,8 +396,20 @@ function renderGallery(){
   el.innerHTML = entries.map(([key,g])=>`
     <div class="gallery-item">
       <img src="${g.photo}">
+      <button onclick="deleteGalleryPhoto('${key}')">×</button>
     </div>
   `).join('');
+}
+
+async function deleteGalleryPhoto(key){
+  if(!confirm('Delete this photo?')) return;
+  try{
+    await fetch('/api/gallery?key='+key, { method:'DELETE' });
+    toast('Photo deleted');
+    loadGallery();
+  }catch(e){
+    toast('Failed to delete','err');
+  }
 }
 
 let _recipes = {};
@@ -450,7 +472,10 @@ function renderRecipes(){
           <div class="order-no">${rec.category||''}</div>
           <div class="order-name">${rec.name}</div>
         </div>
-        <button onclick="event.stopPropagation();deleteRecipe('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:50%;width:26px;height:26px;font-size:12px;cursor:pointer">×</button>
+        <div style="display:flex;gap:6px">
+          <button onclick="event.stopPropagation();shareRecipe('${key}')" style="background:none;border:1px solid var(--border);color:var(--cream);border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer">📤</button>
+          <button onclick="event.stopPropagation();deleteRecipe('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:50%;width:26px;height:26px;font-size:12px;cursor:pointer">×</button>
+        </div>
       </div>
       ${rec.servings ? '<div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:6px">'+rec.servings+'</div>' : ''}
       <div id="recipeDetail_${key}" style="display:none;margin-top:10px;font-size:12px;line-height:1.6;color:rgba(251,240,228,0.8)">
@@ -476,6 +501,59 @@ async function deleteRecipe(key){
     loadRecipes();
   }catch(e){
     toast('Failed to delete','err');
+  }
+}
+
+function shareRecipe(key){
+  const rec = _recipes[key];
+  if(!rec) return;
+  const text = 'caKen Recipe: '+rec.name+'\n\n'+(rec.servings?'Yield: '+rec.servings+'\n\n':'')+'Ingredients:\n'+rec.ingredients+(rec.steps?'\n\nSteps:\n'+rec.steps:'');
+  if(navigator.share){
+    navigator.share({title:rec.name, text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast('📋 Recipe copied')).catch(()=>toast('Could not copy','err'));
+  }
+}
+
+let _chatHistory = [];
+
+function renderChatMessages(){
+  const el = document.getElementById('chatMessages');
+  if(!_chatHistory.length){
+    el.innerHTML = '<div class="empty-state">Ask Chef AI anything — recipe ideas, substitutions, techniques...</div>';
+    return;
+  }
+  el.innerHTML = _chatHistory.map(m=>
+    '<div style="align-self:'+(m.role==='user'?'flex-end':'flex-start')+';max-width:85%;background:'+(m.role==='user'?'var(--pink)':'var(--cocoa-light)')+';color:'+(m.role==='user'?'var(--cream)':'var(--cream)')+';border:1px solid '+(m.role==='user'?'var(--pink)':'var(--border)')+';border-radius:14px;padding:10px 14px;font-size:13px;line-height:1.5;white-space:pre-line">'+m.content+'</div>'
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChefMessage(){
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if(!message) return;
+  input.value = '';
+
+  _chatHistory.push({role:'user', content:message});
+  renderChatMessages();
+
+  const el = document.getElementById('chatMessages');
+  el.innerHTML += '<div style="align-self:flex-start;color:rgba(251,240,228,0.5);font-size:12px;font-style:italic">Chef is thinking...</div>';
+  el.scrollTop = el.scrollHeight;
+
+  try{
+    const r = await fetch('/api/chef-ai', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message, history: _chatHistory.slice(0,-1)})
+    });
+    const data = await r.json();
+    _chatHistory.push({role:'assistant', content: data.reply || 'Sorry, something went wrong.'});
+    renderChatMessages();
+  }catch(e){
+    _chatHistory.push({role:'assistant', content:'Connection error — try again.'});
+    renderChatMessages();
   }
 }
 

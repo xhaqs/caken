@@ -26,6 +26,10 @@ export default {
       return handleRecipes(request, url);
     }
 
+    if (url.pathname === '/api/chef-ai' && request.method === 'POST') {
+      return handleChefAI(request, env);
+    }
+
     const assetResponse = await env.ASSETS.fetch(request);
     const newResponse = new Response(assetResponse.body, assetResponse);
     newResponse.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://riakoine-caken-default-rtdb.firebaseio.com; img-src 'self' data: blob:; media-src 'self' data: blob:; base-uri 'self'");
@@ -68,6 +72,47 @@ async function handleOrders(request) {
       });
     }
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+async function handleChefAI(request, env) {
+  try {
+    const { message, history } = await request.json();
+    if (!message) {
+      return new Response(JSON.stringify({ error: 'message required' }), { status: 400 });
+    }
+
+    const messages = (history || []).concat([{ role: 'user', content: message }]);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: "You are a friendly, knowledgeable pastry chef assistant helping Ken, a home baker running a small custom cake business in Ohio. Give practical, concise advice on recipes, ingredient substitutions, baking techniques, flavor pairings, and cake design ideas. Keep responses conversational and useful for a working baker, not overly formal. Use plain text, not markdown formatting.",
+        messages: messages
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: data.error?.message || 'AI error' }), {
+        status: response.status,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const reply = data.content?.[0]?.text || 'Sorry, I could not think of anything.';
+    return new Response(JSON.stringify({ reply }), {
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
