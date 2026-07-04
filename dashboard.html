@@ -275,12 +275,19 @@ header{
   </div>
 
   <div class="section" id="sec-kitchen">
-    <div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:14px">Ask about recipes, substitutions, techniques, or cake design ideas.</div>
+    <div style="font-size:11px;color:rgba(251,240,228,0.5);margin-bottom:10px">Ask about recipes, substitutions, techniques, or cake design ideas.</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button onclick="clearChat()" style="font-size:10px;background:none;border:1px solid var(--border);color:rgba(251,240,228,0.6);border-radius:100px;padding:5px 12px;cursor:pointer">🗑 Clear</button>
+      <button onclick="saveChat()" style="font-size:10px;background:none;border:1px solid var(--border);color:rgba(251,240,228,0.6);border-radius:100px;padding:5px 12px;cursor:pointer">💾 Save</button>
+      <button onclick="shareChat()" style="font-size:10px;background:none;border:1px solid var(--border);color:rgba(251,240,228,0.6);border-radius:100px;padding:5px 12px;cursor:pointer">📤 Share</button>
+    </div>
     <div id="chatMessages" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:420px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;margin-bottom:20px">
       <input type="text" id="chatInput" placeholder="Ask Chef AI..." style="flex:1;background:var(--cocoa-light);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--cream);font-size:13px;outline:none" onkeypress="if(event.key==='Enter')sendChefMessage()">
       <button onclick="sendChefMessage()" style="background:var(--pink);color:var(--cream);border:none;border-radius:10px;padding:0 18px;font-size:14px;cursor:pointer">➤</button>
     </div>
+    <div class="field-label" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Saved Conversations</div>
+    <div id="savedChatsList"><div class="empty-state">No saved conversations yet</div></div>
   </div>
 
   <div class="section" id="sec-inventory">
@@ -402,6 +409,7 @@ async function checkPin(){
     loadInventory();
     loadSettings();
     loadFeedback();
+    loadSavedChats();
     setTimeout(checkReminders, 800);
     } else {
       toast('Incorrect PIN');
@@ -639,6 +647,78 @@ async function deleteRecipe(key){
     await authFetch('/api/recipes?key='+key, { method:'DELETE' });
     toast('Recipe deleted');
     loadRecipes();
+  }catch(e){
+    toast('Failed to delete','err');
+  }
+}
+
+let _savedChats = {};
+
+function clearChat(){
+  if(_chatHistory.length && !confirm('Clear this conversation? Save it first if you want to keep it.')) return;
+  _chatHistory = [];
+  renderChatMessages();
+}
+
+function conversationText(){
+  return _chatHistory.map(m=>(m.role==='user'?'You: ':'Chef: ')+m.content).join('\n\n');
+}
+
+function shareChat(){
+  if(!_chatHistory.length){ toast('Nothing to share yet'); return; }
+  const text = 'caKen — Chef AI Conversation\n\n'+conversationText();
+  if(navigator.share){
+    navigator.share({title:'Chef AI Conversation', text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast('📋 Conversation copied')).catch(()=>toast('Could not copy','err'));
+  }
+}
+
+async function saveChat(){
+  if(!_chatHistory.length){ toast('Nothing to save yet'); return; }
+  try{
+    await authFetch('/api/saved-chats', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text: conversationText(), ts: Date.now()})
+    });
+    toast('💾 Conversation saved');
+    loadSavedChats();
+  }catch(e){
+    toast('Failed to save','err');
+  }
+}
+
+async function loadSavedChats(){
+  try{
+    const r = await authFetch('/api/saved-chats');
+    _savedChats = await r.json();
+    renderSavedChats();
+  }catch(e){}
+}
+
+function renderSavedChats(){
+  const el = document.getElementById('savedChatsList');
+  const entries = Object.entries(_savedChats||{}).sort((a,b)=>b[1].ts - a[1].ts);
+  if(!entries.length){
+    el.innerHTML = '<div class="empty-state">No saved conversations yet</div>';
+    return;
+  }
+  el.innerHTML = entries.map(([key,chat])=>`
+    <div class="order-card">
+      <div style="font-size:11px;color:rgba(251,240,228,0.4);margin-bottom:6px">${new Date(chat.ts).toLocaleDateString()}</div>
+      <div style="font-size:12px;color:rgba(251,240,228,0.8);white-space:pre-line;max-height:100px;overflow-y:auto;margin-bottom:8px">${chat.text}</div>
+      <button onclick="deleteSavedChat('${key}')" style="background:none;border:1px solid var(--border);color:var(--pink);border-radius:100px;padding:5px 12px;font-size:10px;cursor:pointer">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function deleteSavedChat(key){
+  if(!confirm('Delete this saved conversation?')) return;
+  try{
+    await authFetch('/api/saved-chats?key='+key, { method:'DELETE' });
+    toast('Deleted');
+    loadSavedChats();
   }catch(e){
     toast('Failed to delete','err');
   }
